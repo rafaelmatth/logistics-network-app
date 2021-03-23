@@ -17,7 +17,7 @@ class CreateUser(APIView):
     def post(self, request):
         try:
             req_post = json.loads(request.body)
-            email = req_post['email']
+            email = req_post['username']
             password = req_post['password']
             new_user = CustomUser.objects.create(email=email)
             new_user.set_password(password)
