@@ -4,15 +4,16 @@ from rest_framework import status, generics
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 
 from django.http import JsonResponse, request
-from .models import Map, LogisticsNetwork, Cities
+from .models import Map, LogisticsNetwork, Cities, HistoryLogisticNetwork
 
 import json
-
+import re
 
 class CreateMap(APIView):
+    permission_classes = [IsAuthenticated]
     def post(self, request):
         '''Post method to create a new map, always required the name'''
         req_post = json.loads(request.body)
@@ -42,11 +43,11 @@ class CreateMap(APIView):
         return JsonResponse(response_data, safe=False)
 
 
-class ListLogisticNetwork(APIView):
-    permission_classes = [IsAuthenticated]
+class HandleLogisticsNetwork(APIView):
+    permission_classes = [IsAdminUser]
     def get(self, request):
         maps = Map.objects.all()
-        logistics_networks = LogisticsNetwork.objects.all()
+        logistics_network = LogisticsNetwork.objects.all()
 
         response_data = []
         for map_data in maps:
@@ -56,7 +57,7 @@ class ListLogisticNetwork(APIView):
                 'logistics_network': []
             }
 
-            for logistic_network in logistics_networks:
+            for logistic_network in logistics_network:
                 logistic_data = {
                     'id': logistic_network.id,
                     'origin_city':  logistic_network.origin_city.name,
@@ -70,10 +71,6 @@ class ListLogisticNetwork(APIView):
 
         return JsonResponse(response_data, safe=False)
 
-
-class CreateLogisticNetwork(APIView):
-    permission_classes = [IsAuthenticated]
-
     def post(self, request):
         '''Post method to create a new map, always required the name'''
         req_post = json.loads(request.body)
@@ -82,6 +79,9 @@ class CreateLogisticNetwork(APIView):
             origin_city = str(req_post['origin_city'])
             destination_city = str(req_post['destination_city'])
             distance = float(req_post['distance'])
+
+            if(bool(re.search('\D', origin_city)) == False or bool(re.search('\D', destination_city)) == False):
+                return JsonResponse(status=406, data={'message': 'invalid destination or origin city name'})
         except:
             return JsonResponse(status=406, data={'message': 'wrong data format'})
 
@@ -91,8 +91,7 @@ class CreateLogisticNetwork(APIView):
 
         '''Method to create or call an object of the city model'''
         get_origin_city = Cities.objects.get_or_create(name=origin_city)[0]
-        get_destination_city = Cities.objects.get_or_create(name=destination_city)[
-            0]
+        get_destination_city = Cities.objects.get_or_create(name=destination_city)[0]
 
         '''Check if the map exists and register a new logistics network'''
         try:
@@ -103,6 +102,9 @@ class CreateLogisticNetwork(APIView):
 
             new_logistic_network.save()
 
+            new_log_history = HistoryLogisticNetwork.objects.create(logistic_network=new_logistic_network, user=request.user)
+            new_log_history.save()
+            
             response_data = {
                 'message': 'success when registering a logistic network',
                 'data': {
@@ -117,9 +119,41 @@ class CreateLogisticNetwork(APIView):
 
         except:
             return JsonResponse(status=406, data={'message': 'map name not found'})
+    
+    def delete(self, request):
+        req_delete = json.loads(request.body)
+        try:
+            logistic_network = LogisticsNetwork.objects.get(id=req_delete['id'])
+            logistic_network.delete()
+            return Response(data={'message': 'logistic network successfully deleted'}, status=status.HTTP_204_NO_CONTENT)
+        except:
+            return Response(data={'message': 'logistic network not found'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    def put(self, request):
+        req_put = json.loads(request.body)
+        try:
+            id_logistic_network = int(req_put['id'])
+            origin_city = str(req_put['origin_city'])
+            destination_city = str(req_put['destination_city'])
+            distance = float(req_put['distance'])
 
+            get_origin_city = Cities.objects.get_or_create(name=origin_city)[0]
+            get_destination_city = Cities.objects.get_or_create(name=destination_city)[0]
+            
+            logistic_network = LogisticsNetwork.objects.get(id=id_logistic_network)
 
+            logistic_network.origin_city = get_origin_city
+            logistic_network.destination_city = get_destination_city
+            logistic_network.distance = distance
+            logistic_network.save()
+
+            return JsonResponse(status=200, data={'message': 'logistical network updated successfully'})
+
+        except:
+            return Response(data={'message': 'invalid request data'}, status=status.HTTP_400_BAD_REQUEST)
+        
 class GetTravelValue(APIView):
+    permission_classes = [IsAuthenticated]
     def post(self, request):
         req_post = json.loads(request.body)
         try:
@@ -199,3 +233,25 @@ class GetTravelValue(APIView):
             }
 
             return JsonResponse(data, safe=False)
+
+class TotalRoutesCity(APIView):
+    permission_classes = [IsAuthenticated]
+    def post(self, request):
+        req_post = json.loads(request.body)
+        try:
+            city = str(req_post['city_name'])
+            get_city = Cities.objects.get(name=city)
+            records_of_origins = LogisticsNetwork.objects.filter(origin_city=get_city).count()
+            records_of_destinations = LogisticsNetwork.objects.filter(destination_city=get_city).count()
+
+            total_records = records_of_origins + records_of_destinations
+
+            response_data = {
+                'city_name': city,
+                'total_routes': total_records
+            }
+
+            return Response(data=response_data, status=status.HTTP_200_OK)
+
+        except:
+            return Response(data={'message': 'city name not found'}, status=status.HTTP_400_BAD_REQUEST)

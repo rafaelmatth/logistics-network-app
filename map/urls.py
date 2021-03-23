@@ -1,11 +1,12 @@
 from django.urls import path, include
-from .views import CreateMap, CreateLogisticNetwork, GetTravelValue, ListLogisticNetwork
+from .views import CreateMap, HandleLogisticsNetwork, GetTravelValue, TotalRoutesCity
 
 urlpatterns = [
     path('create/map', CreateMap.as_view()),
     
-    path('create/logistics_network', CreateLogisticNetwork.as_view()),
-    path('list/logistics_network', ListLogisticNetwork.as_view()),
+    path('logistics_network', HandleLogisticsNetwork.as_view()),
 
     path('get_travel_value', GetTravelValue.as_view()),
+
+    path('total_routes_city', TotalRoutesCity.as_view()),
 ]

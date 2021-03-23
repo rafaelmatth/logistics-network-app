@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Map, LogisticsNetwork, Cities
+from .models import Map, LogisticsNetwork, Cities, HistoryLogisticNetwork
 
 class LogisticsNetworkInline(admin.TabularInline):
     model = LogisticsNetwork
@@ -16,3 +16,4 @@ class MapAdmin(admin.ModelAdmin):
 admin.site.register(Map, MapAdmin)
 admin.site.register(LogisticsNetwork)
 admin.site.register(Cities)
+admin.site.register(HistoryLogisticNetwork)
