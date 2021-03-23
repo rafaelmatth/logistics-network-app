@@ -1,14 +1,16 @@
 from django.shortcuts import render
 
 from rest_framework import status, generics
-from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
+from rest_framework.permissions import IsAuthenticated
 
 from django.http import JsonResponse, request
 from .models import Map, LogisticsNetwork, Cities
 
 import json
+
 
 class CreateMap(APIView):
     def post(self, request):
@@ -40,7 +42,38 @@ class CreateMap(APIView):
         return JsonResponse(response_data, safe=False)
 
 
+class ListLogisticNetwork(APIView):
+    permission_classes = [IsAuthenticated]
+    def get(self, request):
+        maps = Map.objects.all()
+        logistics_networks = LogisticsNetwork.objects.all()
+
+        response_data = []
+        for map_data in maps:
+            data = {
+                'id': map_data.id,
+                'map_name': map_data.name,
+                'logistics_network': []
+            }
+
+            for logistic_network in logistics_networks:
+                logistic_data = {
+                    'id': logistic_network.id,
+                    'origin_city':  logistic_network.origin_city.name,
+                    'destination_city':  logistic_network.destination_city.name,
+                    'distance  ':  logistic_network.distance
+                }
+
+                data['logistics_network'].append(logistic_data)
+
+            response_data.append(data)
+
+        return JsonResponse(response_data, safe=False)
+
+
 class CreateLogisticNetwork(APIView):
+    permission_classes = [IsAuthenticated]
+
     def post(self, request):
         '''Post method to create a new map, always required the name'''
         req_post = json.loads(request.body)
@@ -59,7 +92,7 @@ class CreateLogisticNetwork(APIView):
         '''Method to create or call an object of the city model'''
         get_origin_city = Cities.objects.get_or_create(name=origin_city)[0]
         get_destination_city = Cities.objects.get_or_create(name=destination_city)[
-                                                            0]
+            0]
 
         '''Check if the map exists and register a new logistics network'''
         try:
@@ -103,15 +136,16 @@ class GetTravelValue(APIView):
 
         def __sum_total_distance(distance_origin, distance_destination):
             return distance_origin + distance_destination
-        
-        def __calculate_travel_cost(total_distance,vehicle_autonomy,fuel_value):
+
+        def __calculate_travel_cost(total_distance, vehicle_autonomy, fuel_value):
             return total_distance / vehicle_autonomy * fuel_value
 
-
         try:
-            logistic = LogisticsNetwork.objects.filter(origin_city=citie_origin, destination_city=citie_destination).order_by('distance')
-            
-            travel_cost = __calculate_travel_cost(float(logistic[0].distance), vehicle_autonomy, fuel_value )
+            logistic = LogisticsNetwork.objects.filter(
+                origin_city=citie_origin, destination_city=citie_destination).order_by('distance')
+
+            travel_cost = __calculate_travel_cost(
+                float(logistic[0].distance), vehicle_autonomy, fuel_value)
 
             data = {
                 'route': f'{logistic[0].origin_city.name} {logistic[0].destination_city.name}',
@@ -122,27 +156,27 @@ class GetTravelValue(APIView):
 
         except:
             origins = LogisticsNetwork.objects.filter(origin_city=citie_origin)
-            destinations = LogisticsNetwork.objects.filter(destination_city=citie_destination)
+            destinations = LogisticsNetwork.objects.filter(
+                destination_city=citie_destination)
 
             for origin in origins:
                 min_distance_origin = float(origins[0].distance)
-                
+
                 citie_origin_origin = origins[0].origin_city.name
-                
+
                 destination_origin_city = origins[0].destination_city.name
-                
+
                 if float(origin.distance) < min_distance_origin:
                     min_distance_origin = float(origin.distance)
                     citie_origin_origin = origin.origin_city.name
                     destination_origin_city = origin.destination_city.name
 
-
             for destination in destinations:
 
                 min_distance_destination = float(destinations[0].distance)
-                
+
                 citie_destination_origin = destinations[0].origin_city.name
-                
+
                 destination_destination_city = destinations[0].destination_city.name
 
                 if float(destination.distance) < min_distance_destination:
@@ -150,10 +184,13 @@ class GetTravelValue(APIView):
                     citie_destination_origin = destination.origin_city.name
                     destination_destination_city = destination.destination_city.name
 
-            total_distance = __sum_total_distance(min_distance_origin, min_distance_destination)
-            travel_cost = __calculate_travel_cost(total_distance,vehicle_autonomy,fuel_value)
+            total_distance = __sum_total_distance(
+                min_distance_origin, min_distance_destination)
+            travel_cost = __calculate_travel_cost(
+                total_distance, vehicle_autonomy, fuel_value)
 
-            total_cities = [citie_origin_origin, destination_origin_city, citie_destination_origin, destination_destination_city]
+            total_cities = [citie_origin_origin, destination_origin_city,
+                            citie_destination_origin, destination_destination_city]
             lst_total_cities = (sorted(set(total_cities)))
 
             data = {
