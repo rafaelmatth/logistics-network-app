@@ -35,7 +35,7 @@ Registro de usuário (POST)
 	"password": "@@12345@@"
 }
 ```
-Após registrar um usuário você obterá um token na resposta da requisição, é importante guarda-lo para realizar as futuras requisições.
+Após logar um usuário você obterá um token na resposta da requisição, é importante guarda-lo para realizar as futuras requisições.
 
 Realizando login (POST)
 ----------
