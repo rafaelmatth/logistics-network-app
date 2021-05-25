@@ -1,4 +1,4 @@
-# executando python-test
+# executando logistics-network-app 
 
 Para rodar o projeto é importante que tenha uma virtualenv instalada, assim poderá isolar uma versão especifica de python, no caso desse projeto, python3.
 
