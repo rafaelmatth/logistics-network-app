@@ -122,9 +122,3 @@ Verificando número de rotas de uma cidade (POST)(Authorization  Token exemple_t
 	"city_name": "D"
 }
 ```
-
-Notas
-----------
-- A tecnologia escolhida por mim foi o django, pois além de eu ter bastante afinidade com o framework, consegui obter diversas funcões para acelerar e facilitar o processo de desenvolvimento desse serviço. Além disso, também contei com o admin do django para gerenciar os dados que eu estava trabalhando, sem perder tempo com gerenciadores de bancos de dados
-- Não consegui realizar o desafio de fazer com que todas as requisições devem conter um cabeçalho chamado Signature, que deverá conter a hash SHA256. Com isso, trabalhei com autenticação via Token.
-
